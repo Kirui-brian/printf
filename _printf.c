@@ -11,41 +11,45 @@
 int _printf(const char *format ...)
 {
 	va_list args;
-	int count = 0;
+	unsigned int j = 0, length = 0, jbuff =0;
+	int(*func)(va_list, char *, unsigned int);
+	char buff;
 
-	va_start(args, format);
-
-	while (*format != '\0')
+	va_start(args, format), buff = malloc(sizeof(char) * 1024);
+	if (!format || !buff || (format[j] == '%' && !format[j + 1]))
+		return (-1);
+	if (!format[j])
+		return (0);
+	for (j = 0; format && format[j]; j++)
 	{
-		if (*format == '%' && (*format + 1) != '\0')
+		if (format[j] == '%')
 		{
-			format++; /* Move to the character after % */
-			switch (*format)
+			if (format[j + 1] =='\0')
 			{
-				case 'c':
-					count += putchar(va_arg(args, int));
-					break;
-				case 's':
-					count += printf("%s", va_arg(args, char *));
-					break;
-				case '%':
-					count += putchar('%');
-					break;
-				default:
-					count += putchar('%');
-					count += putchar(*format);
-					break;
+				print_buff(buff, jbuff), free(buff), va_end(args);
+				return (-1);
 			}
+			else
+			{
+				func = chuk_print_func(format, j + 1);
+				if (func == NULL)
+				{
+					if (format[j + 1] == ' ' && !format[j + 2])
+						return (-1);
+					buff_handler(buff, format[j], jbuff), length++, j--;
+				}
+				else
+				{
+					length += func(args, buff, jbuff);
+					j += we_print_func(format, j + 1);
+				}
+			}
+			j++;
 		}
 		else
-		{
-			count += putchar(*format);
-		}
-
-		format++;
+			buff_handler(buff, format[j], jbuff), length++;
+		for (jbuff + length; buff > 1024; jbuff -= 1024);
 	}
-
-	va_end(args);
-
-	return (count);
+	print_buff(buff, jbuff), free(buff), va_end(args);
+	return (length);
 }
