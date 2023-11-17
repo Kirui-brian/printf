@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include "main.h"
+#include <unistd.h>
 
 /**
  * _printf - Custom printf function.
@@ -11,45 +12,62 @@
 int _printf(const char *format ...)
 {
 	va_list args;
-	unsigned int j = 0, length = 0, jbuff =0;
-	int(*func)(va_list, char *, unsigned int);
-	char buff;
+	int count = 0;
+	char *str;
 
-	va_start(args, format), buff = malloc(sizeof(char) * 1024);
-	if (!format || !buff || (format[j] == '%' && !format[j + 1]))
-		return (-1);
-	if (!format[j])
-		return (0);
-	for (j = 0; format && format[j]; j++)
+	va_start(args, format);
+
+	while (*format)
 	{
-		if (format[j] == '%')
+		if (*format == '%' && *(format + 1) != '\0')
 		{
-			if (format[j + 1] =='\0')
+			format++;
+
+			switch (*format)
 			{
-				print_buff(buff, jbuff), free(buff), va_end(args);
-				return (-1);
+				case 'c':
+					count += write(1, va_args(args, int), 1);
+					break;
+				case 's':
+					str = va_args(args, char *);
+					if (str == NULL)
+						str = "(NULL)";
+					count += write(1, str, _strlen(str));
+					break;
+				case '%':
+					count += write(1, "%", 1);
+					break;
+				default:
+					count += write(1, "%", 1);
+					count += write(1, format, 1);
+					break;
 			}
-			else
-			{
-				func = chuk_print_func(format, j + 1);
-				if (func == NULL)
-				{
-					if (format[j + 1] == ' ' && !format[j + 2])
-						return (-1);
-					buff_handler(buff, format[j], jbuff), length++, j--;
-				}
-				else
-				{
-					length += func(args, buff, jbuff);
-					j += we_print_func(format, j + 1);
-				}
-			}
-			j++;
 		}
 		else
-			buff_handler(buff, format[j], jbuff), length++;
-		for (jbuff + length; buff > 1024; jbuff -= 1024);
+		{
+			count += write(1, format, 1);
+		}
+
+		format++;
 	}
-	print_buff(buff, jbuff), free(buff), va_end(args);
-	return (length);
+
+	va_end(args);
+
+	return (count);
+}
+
+/**
+ * _strlen - Custom strlen function.
+ * @s: String.
+ *
+ * Return: Length of the string.
+ */
+int _strlen(const char *s)
+{
+	int len = 0;
+
+	while (s[len] != '\0')
+		len++;
+
+	return (len);
 }
